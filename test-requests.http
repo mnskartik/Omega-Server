@@ -1,0 +1,180 @@
+### Omega Connect API Test Requests
+### Use with REST Client extension in VS Code
+### Or import into Postman/Insomnia
+
+@baseUrl = http://localhost:5000/api
+@token = your_jwt_token_here
+
+### ============================================
+### AUTHENTICATION ROUTES
+### ============================================
+
+### Health Check
+GET http://localhost:5000/health
+
+### Register User
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "password123",
+  "gender": "male",
+  "bio": "Hello, I'm a test user!",
+  "interests": ["music", "sports", "travel"]
+}
+
+### Login User
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "password123"
+}
+
+### Get Current User
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+### Logout User
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{token}}
+
+### Update Password
+PUT {{baseUrl}}/auth/updatepassword
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "currentPassword": "password123",
+  "newPassword": "newpassword123"
+}
+
+### ============================================
+### USER ROUTES
+### ============================================
+
+### Get User Profile
+GET {{baseUrl}}/users/507f1f77bcf86cd799439011
+Authorization: Bearer {{token}}
+
+### Update Profile
+POST {{baseUrl}}/users/update
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "bio": "Updated bio - I love coding!",
+  "interests": ["coding", "music", "travel", "photography"],
+  "gender": "male"
+}
+
+### Get Recommendations (Live Users)
+GET {{baseUrl}}/users/recommendations
+Authorization: Bearer {{token}}
+
+### Swipe User - Like
+POST {{baseUrl}}/users/swipe
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "targetUserId": "507f1f77bcf86cd799439011",
+  "action": "like"
+}
+
+### Swipe User - Skip
+POST {{baseUrl}}/users/swipe
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "targetUserId": "507f1f77bcf86cd799439011",
+  "action": "skip"
+}
+
+### Report User
+POST {{baseUrl}}/users/report
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "targetUserId": "507f1f77bcf86cd799439011",
+  "action": "report",
+  "reason": "Inappropriate behavior"
+}
+
+### Block User
+POST {{baseUrl}}/users/report
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "targetUserId": "507f1f77bcf86cd799439011",
+  "action": "block"
+}
+
+### Get User Matches
+GET {{baseUrl}}/users/matches
+Authorization: Bearer {{token}}
+
+### ============================================
+### VIDEO ROUTES
+### ============================================
+
+### Start Live Stream
+POST {{baseUrl}}/video/start
+Authorization: Bearer {{token}}
+
+### Join Stream
+POST {{baseUrl}}/video/join
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "streamKey": "user_id_1234567890_abc123def456"
+}
+
+### End Stream
+POST {{baseUrl}}/video/end
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "streamKey": "user_id_1234567890_abc123def456"
+}
+
+### Get Stream Status
+GET {{baseUrl}}/video/status/507f1f77bcf86cd799439011
+Authorization: Bearer {{token}}
+
+### Get Stream History
+GET {{baseUrl}}/video/history
+Authorization: Bearer {{token}}
+
+### ============================================
+### SUBSCRIPTION ROUTES
+### ============================================
+
+### Get Subscription Plans
+GET {{baseUrl}}/subscription/plans
+
+### Get Subscription Status
+GET {{baseUrl}}/subscription/status
+Authorization: Bearer {{token}}
+
+### Subscribe to Premium
+POST {{baseUrl}}/subscription/subscribe
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "plan": "premium",
+  "paymentMethodId": "pm_1234567890"
+}
+
+### Cancel Subscription
+POST {{baseUrl}}/subscription/cancel
+Authorization: Bearer {{token}}
+
