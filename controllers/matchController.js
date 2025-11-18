@@ -5,35 +5,35 @@ export function setupMatchmaking(io) {
     console.log("User connected:", socket.id);
 
     socket.on("findPartner", () => {
-      console.log("Looking for partner:", socket.id);
+      console.log("User searching:", socket.id);
 
-      // If no waiting user → store this user
+      // if no one waiting → this user becomes the waiting user
       if (!waitingUser) {
         waitingUser = socket.id;
         io.to(socket.id).emit("matchStatus", "Searching...");
         return;
       }
 
-      // DO NOT MATCH USER TO HIMSELF
+      // prevent matching user with himself
       if (waitingUser === socket.id) {
-        console.log("User tried to match with himself, ignoring.");
+        console.log("Ignoring self-match", socket.id);
         return;
       }
 
-      // Found 2 users → match them
-      let partner = waitingUser;
+      // MATCH them
+      io.to(socket.id).emit("partnerFound", waitingUser);
+      io.to(waitingUser).emit("partnerFound", socket.id);
 
-      io.to(socket.id).emit("partnerFound", partner);
-      io.to(partner).emit("partnerFound", socket.id);
+      console.log(`Matched: ${socket.id} ↔ ${waitingUser}`);
 
-      console.log(`Matched: ${socket.id} ↔ ${partner}`);
-
-      waitingUser = null; // queue reset
+      waitingUser = null;
     });
 
     socket.on("disconnect", () => {
-      if (waitingUser === socket.id) waitingUser = null;
-      console.log("Disconnected:", socket.id);
+      console.log("User disconnected:", socket.id);
+      if (waitingUser === socket.id) {
+        waitingUser = null;
+      }
     });
   });
 }

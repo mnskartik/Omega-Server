@@ -65,12 +65,16 @@ app.use('/api/video', videoRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 
 
-// Socket.io connection handling
+// -----------------------------------------
+// GLOBAL WAITING USER (🔥 must be outside io.on)
+// -----------------------------------------
+let waitingUser = null;
+
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
   // -----------------------------------------
-  // 1️⃣ LIVESTREAM EVENTS  (your existing system)
+  // 1️⃣ LIVESTREAM EVENTS (your existing system)
   // -----------------------------------------
 
   socket.on("goLive", async (userId) => {
@@ -105,26 +109,36 @@ io.on("connection", (socket) => {
   // 2️⃣ OMEGLE-STYLE MATCHMAKING
   // -----------------------------------------
 
-  // Temporary storage for waiting user
-  let waitingUser = null;
-
   socket.on("findPartner", () => {
+    console.log("User searching:", socket.id);
+
+    // Nobody waiting → this user waits
     if (!waitingUser) {
       waitingUser = socket.id;
-      socket.emit("matchStatus", "Waiting for a partner...");
-    } else {
-      const partner = waitingUser;
-      waitingUser = null;
-
-      // send match to both users
-      socket.emit("partnerFound", partner);
-      io.to(partner).emit("partnerFound", socket.id);
-
-      console.log(`Matched: ${socket.id} ↔ ${partner}`);
+      socket.emit("matchStatus", "Searching...");
+      return;
     }
+
+    // Avoid matching user with himself
+    if (waitingUser === socket.id) {
+      console.log("Ignored self-match:", socket.id);
+      return;
+    }
+
+    // MATCH SUCCESSFUL
+    const partner = waitingUser;
+    waitingUser = null;
+
+    socket.emit("partnerFound", partner);
+    io.to(partner).emit("partnerFound", socket.id);
+
+    console.log(`Matched: ${socket.id} ↔ ${partner}`);
   });
 
-  // WebRTC relays for 1-on-1 matching
+  // -----------------------------------------
+  // 3️⃣ WEBRTC RELAY (1-on-1)
+  // -----------------------------------------
+
   socket.on("offer-m", ({ offer, target }) => {
     io.to(target).emit("offer-m", { offer, from: socket.id });
   });
@@ -138,17 +152,15 @@ io.on("connection", (socket) => {
   });
 
   // -----------------------------------------
-  // 3️⃣ DISCONNECT HANDLING
+  // 4️⃣ DISCONNECT
   // -----------------------------------------
   socket.on("disconnect", async () => {
     console.log("User disconnected:", socket.id);
 
-    // livestream cleanup
     if (socket.userId) {
       await User.findByIdAndUpdate(socket.userId, { isLive: false });
     }
 
-    // matchmaking cleanup
     if (waitingUser === socket.id) {
       waitingUser = null;
     }
