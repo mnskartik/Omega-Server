@@ -153,7 +153,7 @@ io.on("connection", (socket) => {
 
   // -----------------------------------------
   // 4️⃣ DISCONNECT
-  // -----------------------------------------
+ 
   socket.on("disconnect", async () => {
     console.log("User disconnected:", socket.id);
 
