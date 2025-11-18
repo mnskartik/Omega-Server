@@ -64,18 +64,17 @@ app.use('/api/users', userRoutes);
 app.use('/api/video', videoRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 
-
 // -----------------------------------------
-// GLOBAL WAITING USER (🔥 must be outside io.on)
+// GLOBAL WAITING USER (shared for all sockets)
 // -----------------------------------------
 let waitingUser = null;
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  // -----------------------------------------
-  // 1️⃣ LIVESTREAM EVENTS (your existing system)
-  // -----------------------------------------
+  // ============================================================
+  // 1️⃣ LIVESTREAM EVENTS (Your existing system)
+  // ============================================================
 
   socket.on("goLive", async (userId) => {
     socket.userId = userId;
@@ -105,9 +104,9 @@ io.on("connection", (socket) => {
     });
   });
 
-  // -----------------------------------------
-  // 2️⃣ OMEGLE-STYLE MATCHMAKING
-  // -----------------------------------------
+  // ============================================================
+  // 2️⃣ OMEGLE-STYLE MATCHMAKING (FIXED)
+  // ============================================================
 
   socket.on("findPartner", () => {
     console.log("User searching:", socket.id);
@@ -119,25 +118,33 @@ io.on("connection", (socket) => {
       return;
     }
 
-    // Avoid matching user with himself
+    // Prevent matching user with himself
     if (waitingUser === socket.id) {
-      console.log("Ignored self-match:", socket.id);
+      console.log("Ignored self-match", socket.id);
       return;
     }
 
-    // MATCH SUCCESSFUL
     const partner = waitingUser;
     waitingUser = null;
 
-    socket.emit("partnerFound", partner);
-    io.to(partner).emit("partnerFound", socket.id);
+    // Caller = the user who clicked "Find Partner"
+    socket.emit("partnerFound", {
+      partnerId: partner,
+      caller: true,
+    });
+
+    // Callee = the waiting user
+    io.to(partner).emit("partnerFound", {
+      partnerId: socket.id,
+      caller: false,
+    });
 
     console.log(`Matched: ${socket.id} ↔ ${partner}`);
   });
 
-  // -----------------------------------------
-  // 3️⃣ WEBRTC RELAY (1-on-1)
-  // -----------------------------------------
+  // ============================================================
+  // 3️⃣ WEBRTC RELAY CHANNELS
+  // ============================================================
 
   socket.on("offer-m", ({ offer, target }) => {
     io.to(target).emit("offer-m", { offer, from: socket.id });
@@ -151,9 +158,9 @@ io.on("connection", (socket) => {
     io.to(target).emit("ice-m", { candidate, from: socket.id });
   });
 
-  // -----------------------------------------
+  // ============================================================
   // 4️⃣ DISCONNECT
-  // -----------------------------------------
+  // ============================================================
   socket.on("disconnect", async () => {
     console.log("User disconnected:", socket.id);
 
@@ -166,6 +173,7 @@ io.on("connection", (socket) => {
     }
   });
 });
+
 
 
 // Start server
