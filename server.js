@@ -110,30 +110,28 @@ io.on("connection", (socket) => {
   // -----------------------------------------
 
   socket.on("findPartner", () => {
-    console.log("User searching:", socket.id);
+  console.log("User searching:", socket.id);
 
-    // Nobody waiting → this user waits
-    if (!waitingUser) {
-      waitingUser = socket.id;
-      socket.emit("matchStatus", "Searching...");
-      return;
-    }
+  if (!waitingUser) {
+    waitingUser = socket.id;
+    socket.emit("matchStatus", "Searching...");
+    return;
+  }
 
-    // Avoid matching user with himself
-    if (waitingUser === socket.id) {
-      console.log("Ignored self-match:", socket.id);
-      return;
-    }
+  if (waitingUser === socket.id) return;
 
-    // MATCH SUCCESSFUL
-    const partner = waitingUser;
-    waitingUser = null;
+  const partner = waitingUser;
+  waitingUser = null;
 
-    socket.emit("partnerFound", partner);
-    io.to(partner).emit("partnerFound", socket.id);
+  // Caller = the new user (socket.id)
+  socket.emit("partnerFound", { partnerId: partner, caller: true });
 
-    console.log(`Matched: ${socket.id} ↔ ${partner}`);
-  });
+  // Callee = the waiting user
+  io.to(partner).emit("partnerFound", { partnerId: socket.id, caller: false });
+
+  console.log(`Matched: ${socket.id} ↔ ${partner}`);
+});
+
 
   // -----------------------------------------
   // 3️⃣ WEBRTC RELAY (1-on-1)
